@@ -13,7 +13,17 @@
                    :read-fn  :vanilla.fetcher/current-time
                    :params   []
                    :schedule {:in    [0 :seconds]
-                              :every [5 :seconds]}}])
+                              :every [5 :seconds]}}
+
+                  {:name     :entity-traces-1
+                   :read-fn  :vanilla.fetcher/entity-1
+                   :schedule {:in    [0 :seconds]
+                              :every [7 :seconds]}}
+
+                  {:name     :entity-traces-2
+                   :read-fn  :vanilla.fetcher/entity-2
+                   :schedule {:in    [0 :seconds]
+                              :every [9 :seconds]}}])
 
 (defn start-dashboard[]
   (prn "server starting")
