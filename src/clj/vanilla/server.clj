@@ -1,13 +1,20 @@
 (ns vanilla.server
     (:require [dashboard-clj.core :as dash]
               [environ.core :refer [env]]
-              [vanilla.fetcher])
+              [vanilla.fetcher]
+              [vanilla.sankey-service]
+              [vanilla.bubble-service])
     (:gen-class))
 
 (def datasources [{:name     :spectrum-traces
-                   :read-fn  :vanilla.fetcher/fetch
+                   :read-fn  :vanilla.fetcher/spectrum-traces
                    :schedule {:in    [0 :seconds]
                               :every [2 :seconds]}}
+
+                  {:name     :usage-data
+                   :read-fn  :vanilla.fetcher/usage-data
+                   :schedule {:in    [0 :seconds]
+                              :every [4 :seconds]}}
 
                   {:name     :current-time
                    :read-fn  :vanilla.fetcher/current-time
@@ -15,15 +22,26 @@
                    :schedule {:in    [0 :seconds]
                               :every [5 :seconds]}}
 
-                  {:name     :entity-traces-1
-                   :read-fn  :vanilla.fetcher/entity-1
+                  {:name :sankey-service
+                   :read-fn :vanilla.sankey-service/fetch-data
                    :schedule {:in    [0 :seconds]
-                              :every [7 :seconds]}}
+                              :every [5 :seconds]}}
 
-                  {:name     :entity-traces-2
-                   :read-fn  :vanilla.fetcher/entity-2
+                  {:name :bubble-service
+                   :read-fn :vanilla.bubble-service/fetch-data
                    :schedule {:in    [0 :seconds]
-                              :every [9 :seconds]}}])
+                              :every [5 :seconds]}}
+
+                  {:name     :power-data
+                   :read-fn  :vanilla.fetcher/power-data
+                   :schedule {:in    [0 :seconds]
+                              :every [3 :seconds]}}
+
+                  {:name     :heatmap-data
+                   :read-fn  :vanilla.fetcher/heatmap-data
+                   :schedule {:in    [0 :seconds]
+                              :every [3 :seconds]}}])
+
 
 (defn start-dashboard[]
   (prn "server starting")
