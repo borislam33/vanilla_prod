@@ -1,7 +1,15 @@
 version: 0.2
 
-
 phases:
+  install:
+    commands:
+      - cd $HOME
+      - pip install --upgrade awscli
+      - wget https://raw.github.com/technomancy/leiningen/stable/bin/lein; chmod +x lein; mv lein /bin;
+      - LEIN_ROOT=true lein
+      - mkdir clj_tools_install; cd clj_tools_install
+      - curl -O https://download.clojure.org/install/linux-install-1.10.0.411.sh; chmod +x linux-install-1.10.0.411.sh; ./linux-install-1.10.0.411.sh
+      - cd $CODEBUILD_SRC_DIR
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
@@ -12,8 +20,9 @@ phases:
       - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
   build:
     commands:
-      - echo Building the Uberjar...
-      - lein uberjar
+      - echo Entering build phase...
+      - echo Build started on `date`
+      - LEIN_ROOT=true lein uberjar
       - echo Build started on `date`
       - echo Building the Docker image...
       - docker build -t $REPOSITORY_URI:latest .
