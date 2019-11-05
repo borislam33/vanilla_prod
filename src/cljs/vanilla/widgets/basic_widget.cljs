@@ -5,26 +5,41 @@
 
 
 
+(defn debug-style [options]
+  (if (get-in options [:viz :debug] false)
+    :dotted
+    :none))
+
+
+
 (defn basic-widget [data options custom-content]
-  [:div {:class "chart container"
-         :style {:height (get-in options [:viz :height] "100%")
+
+  ;(.log js/console (str "basic-widget " name " of " type))
+
+  [:div {:class "vanilla.widgets.line-chart container"
+         :style {:height (get options :viz/height "100%")
                  :width "100%"}}
    [:div {:class "title-wrapper"}
-    [:h3 {:class "title"
-          :style {:background-color
-                  (get-in options [:viz :banner-color] "lightblue")
-                  :color (get-in options [:viz :banner-text-color] "black")}}
-     (get-in options [:viz :title])]]
+    [:container.level {:style {:background-color
+                                      (get options :viz/banner-color "lightblue")}}
 
-   [:div {:class (str (get-in options [:viz :style-name] "widget"))
+     [:div.level-left.has-text-left
+      [:h3 {:class "title"
+            :style {:color (get options :viz/banner-text-color "black")}}
+       (get options :viz/title)]]
+     [:div.level-right.has-text-centered
+      [:button.delete.is-large {:style {:margin-right "10px"}
+                                :on-click #(.log js/console
+                                                 (str "Close widget "))}]]]]; name))}]]]]
+
+
+   [:div {:class (str (get options :viz/style-name "widget"))
           :style {:width "100%"
                   :height "80%"
                   :marginRight "50px"
                   :marginTop "5px"
                   :cursor :default
-                  :border-style (if (get-in options [:viz :debug] false)
-                                  :dotted
-                                  :none)
+                  :border-style (debug-style options)
                   :align-items :stretch
                   :display :flex}
           :on-mouse-down #(.stopPropagation %)}

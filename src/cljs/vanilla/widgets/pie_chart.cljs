@@ -1,60 +1,74 @@
 (ns vanilla.widgets.pie-chart
   (:require [reagent.core :as r]
             [reagent.ratom :refer-macros [reaction]]
-            [dashboard-clj.widgets.core :as widget-common]
-            [vanilla.widgets.basic-widget :as basic]
+            [vanilla.widgets.make-chart :as mc]
             [vanilla.widgets.util :as util]))
 
 
-(defn- render
-  []
-  [:div {:style {:width "100%" :height "100%"}}])
 
-(def pie-chart-config
-  {:chart   {:type            "pie"
-             :backgroundColor "transparent"
-             :style           {:labels {
-                                        :fontFamily "monospace"
-                                        :color      "#FFFFFF"}}}
-   :yAxis   {:title  {:style {:color "#000000"}}
-             :labels {:color "#ffffff"}}
-   :xAxis   {:labels {:style {:color "#fff"}}}
-   :credits {:enabled false}})
+(defn plot-options
+  [chart-config data options]
+
+  ;(.log js/console (str "pie/plot-options " chart-config))
+
+  {:plotOptions {:series {:animation (:viz/animation options false)}
+                 :pie    {:allowPointSelect true
+                          :dataLabels       {:enabled (get options :viz/dataLabels false)
+                                             :format  (get options :viz/labelFormat "")}}}})
 
 
-(defn- plot-pie [this]
-  (let [config     (-> this r/props :chart-options)
-        all-config (merge-with clojure.set/union pie-chart-config config)]
-
-    (.log js/console (str "plot-pie "))
-
-    (js/Highcharts.Chart. (r/dom-node this)
-                          (clj->js all-config))))
-
-(defn- pie-chart
-  [chart-options]
-  (r/create-class {:reagent-render       render
-                   :component-did-mount  plot-pie
-                   :component-did-update plot-pie}))
 
 
-(defn embed-pie [data options]
-  (let [dats (util/process-data (get-in data [:data (get-in options [:src :extract])])
-                                (get-in options [:src :slice-at]))]
+;;;;;;;;;;;;;;
+;
+; these functions will convert the data from the current format into
+; what the chart type actually wants. This may involve adding
+; data to the :series, or rearranging the contents
 
-    ;(.log js/console (str ":pie-chart " name " " slice-at))
+(defn- process-data [data slice-at]
 
-    [pie-chart
-     {:chart-options
-      {:title       {:text ""}
-       :plotOptions {:series {:animation (get-in options [:viz :animation] false)}}
-       :tooltip     (get-in options [:viz :tooltip] {})
-       :series      dats}}]))
+  ;(.log js/console "pie process-data" (str data))
+
+  [{:colorByPoint true
+    :keys         ["name" "y" "selected" "sliced"]
+    :data         (map #(conj % false (< (second %) slice-at)) data)}])
 
 
-(widget-common/register-widget
-  :pie-chart
-  (fn [data options]
-    [basic/basic-widget data options
-     [:div {:style {:width "100%"}}
-      [embed-pie data options]]]))
+(defn convert-x-y
+  [chart-type data options]
+
+  ;(.log js/console (str "pie/convert-x-y " chart-type))
+
+  (process-data (get-in data [:data (get-in options [:src/extract])])
+                (get-in options [:viz/slice-at])))
+
+
+(defn convert-name-y
+  [chart-type data options]
+
+  ;(.log js/console (str "pie/convert-name-y " chart-type
+  ;                      " //// " data " //// " options
+  ;                      " //// " (get-in data [:data :series 0 :data])))
+
+  (process-data (get-in data [:data :series 0 :data] [])
+                (get-in options [:viz/slice-at])))
+
+
+;;;;;;;;;;;;;;
+;
+; register all the data stuff so we have access to it
+;
+(mc/register-type
+  :pie-chart {:chart-options     {:chart/type              :pie-chart
+                                  :chart/supported-formats [:data-format/name-y :data-format/x-y]
+                                  :chart                   {:type  "pie"
+                                                            :style {:labels {:fontFamily "monospace"
+                                                                             :color      "#FFFFFF"}}}}
+
+              :merge-plot-option {:default plot-options}
+
+              :conversions       {:data-format/x-y convert-x-y
+                                  :default         convert-name-y}})
+
+
+
