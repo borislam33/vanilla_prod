@@ -1,62 +1,73 @@
 (ns vanilla.widgets.sankey-chart
   (:require [reagent.core :as r]
-          [reagent.ratom :refer-macros [reaction]]
-          [dashboard-clj.widgets.core :as widget-common]
-          [vanilla.widgets.basic-widget :as basic]
-          [vanilla.widgets.util :as util]))
-
-(defn- render
-  []
-  [:div {:style {:width "100%" :height "100%"}}])
+            [reagent.ratom :refer-macros [reaction]]
+            [vanilla.widgets.make-chart :as mc]))
 
 
-(def sankey-chart-config
-  {:chart   {:type            "sankey"
-             :backgroundColor "transparent"}
 
-             ;:style           {:labels {
-             ;                           :fontFamily "monospace"
-             ;                           :color      "#FFFFFF"}}}
-   :credits {:enabled false}})
+(defn plot-options
+  [chart-config data options]
 
+  ;(.log js/console (str "sankey-deps/plot-options " chart-config))
 
-(defn- plot-sankey [this]
-  (let [config     (-> this r/props :chart-options)
-        all-config (merge-with clojure.set/union sankey-chart-config config)]
-
-    (.log js/console (str "plot-sankey " all-config))
-
-    (js/Highcharts.Chart. (r/dom-node this)
-                          (clj->js all-config))))
+  {:plotOptions {:series {:animation (:viz/animation options false)}}})
 
 
-(defn sankey-chart
-  [chart-options]
-  (r/create-class {:reagent-render       render
-                   :component-did-mount  plot-sankey
-                   :component-did-update plot-sankey}))
+(defn sankey-conversion
+  [chart-type data options]
+
+  ;(.log js/console (str "sankey-conversion " chart-type
+  ;                      " //// (data)" data
+  ;                      " //// (options)" options))
+
+  [{:keys (get-in data [:data :src/keys] [])
+    :data (get-in data [:data :series 0 :data])}])
 
 
-(defn embed-sankey [data options]
-  (let []
 
-    (.log js/console (str "embed-sankey " data))
+(defn dependency-conversion
+  [chart-type data options]
 
-    [sankey-chart
-     {:chart-options
-      {:title       {:text ""}
-       :plotOptions {:series {:animation (get-in options [:viz :animation] false)}}
-       :series      [{:type "sankey"
-                      :keys (get-in data [:data (get-in options [:src :keys])])
-                      :data (get-in data [:data (get-in options [:src :extract])])}]}}]))
+  ;(.log js/console (str "dependency-conversion " chart-type
+  ;                      " //// (data)" data
+  ;                      " //// (options)" options))
+
+  [{:keys       (get-in data [:data :src/keys] [])
+    :dataLabels {:color    "#333"
+                 :textPath {:enabled    true
+                            :attributes {:dy 5}}
+                 :distance 10}
+    :size       "95%"
+    :data       (get-in data [:data :series 0 :data])}])
 
 
-(widget-common/register-widget
-  :sankey-chart
-  (fn [data options]
-    (let []
 
-      [basic/basic-widget data options
-       [:div {:style {:width "95%" :height "100%"}}
+;;;;;;;;;;;;;;
+;
+; register all the data stuff so we have access to it
+;
+(mc/register-type
+  :sankey-chart {:chart-options
+                 {:chart/type              :sankey-chart
+                  :chart/supported-formats [:data-format/from-to :data-format/from-to-n]
+                  :chart                   {:type "sankey"}}
 
-        [embed-sankey data options]]])))
+                 :merge-plot-option
+                 {:default mc/default-plot-options}
+
+                 :conversions
+                 {:default sankey-conversion}})
+
+
+
+(mc/register-type
+  :dependency-chart {:chart-options
+                     {:chart/type              :dependency-chart
+                      :chart/supported-formats [:data-format/from-to :data-format/from-to-n]
+                      :chart                   {:type "dependencywheel"}}
+
+                     :merge-plot-option
+                     {:default mc/default-plot-options}
+
+                     :conversions
+                     {:default dependency-conversion}})
